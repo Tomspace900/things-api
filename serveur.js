@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require("path");
 const mysql = require('mysql');
+const cors = require('cors')
 require('dotenv').config();
 
 
@@ -11,6 +12,7 @@ const {ROUTE_HOME, ROUTE_CONTACT} = require("./routes");
 const app = express();
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
+app.use(cors())
 
 // ROUTAGE EXPRESS
 app.get(ROUTE_HOME, home)
