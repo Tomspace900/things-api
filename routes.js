@@ -1,11 +1,11 @@
 const
     ROUTE_HOME = '/',
     ROUTE_LOGIN = '/login',
-    ROUTE_CONTACT = '/contact'
+    ROUTE_TEST_LOGIN = '/test-login'
 ;
 
 module.exports = {
     ROUTE_HOME,
     ROUTE_LOGIN,
-    ROUTE_CONTACT
+    ROUTE_TEST_LOGIN
 }
