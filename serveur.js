@@ -70,21 +70,21 @@ function login(request, response) {
 	// Ensure the input fields exists and are not empty
 	if (email && password) {
 		// Execute SQL query that'll select the account from the database based on the specified username and password
-		connection.query('SELECT * FROM accounts WHERE email = ? AND password = ?', [email, password], function(error, results, fields) {
+		connection.query('SELECT username,email,birth,town,zipcode,profile_pic,sexe FROM accounts JOIN passwords p ON accounts.user_id=p.password_id WHERE email= ?  AND p.password= ?', [email, password], function(error, results, fields) {
 			// If there is an issue with the query, output the error
 			if (error) throw error;
 			// If the account exists
 			if (results.length > 0) {
 				// Redirect to home page
 				const token = generateAccessToken({ email: request.query.email });
-        response.json({id_token : token, message: "User connected"});
+        response.json({id_token : token, user: results[0], message: "User connected"});
 			} else {
-				response.json({id_token : null, message: 'Incorrect Username and/or Password!'});
+				response.json({id_token : null, user: null, message: 'Incorrect Username and/or Password!'});
 			}			
 			response.end();
 		});
 	} else {
-		response.json({id_token : null, message: 'Please enter Username and Password!'});
+		response.json({id_token : null, user: null, message: 'Please enter Username and Password!'});
 		response.end();
 	}
 }
