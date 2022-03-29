@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN} = require("./routes");
+const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER} = require("./routes");
 
 const app = express();
 app.use(express.urlencoded({extended: false}));
@@ -22,6 +22,7 @@ app.use(function(req, res, next) {
 // ROUTAGE EXPRESS
 app.get(ROUTE_HOME, home)
 app.use(ROUTE_LOGIN, login)
+app.use(ROUTE_REGISTER, register)
 app.get(ROUTE_TEST_LOGIN, authenticateToken, testLogin)
 
 // MYSQL 
@@ -70,7 +71,7 @@ function login(request, response) {
 	// Ensure the input fields exists and are not empty
 	if (email && password) {
 		// Execute SQL query that'll select the account from the database based on the specified username and password
-		connection.query('SELECT username,email,birth,town,zipcode,profile_pic,sexe FROM accounts JOIN passwords p ON accounts.user_id=p.password_id WHERE email= ?  AND p.password= ?', [email, password], function(error, results, fields) {
+		connection.query('SELECT username,email,birth,town,zipcode,profile_pic,sexe, name, surname FROM accounts JOIN passwords p ON accounts.user_id=p.password_id WHERE email= ?  AND p.password= ?', [email, password], function(error, results, fields) {
 			// If there is an issue with the query, output the error
 			if (error) throw error;
 			// If the account exists
@@ -88,6 +89,30 @@ function login(request, response) {
 		response.end();
 	}
 }
+
+function register(request, response) {
+  const user = request.body.data;
+  const values = [
+    user.name,
+    user.surname,
+    user.username,
+    user.email,
+    user.birth,
+    user.zipcode,
+    user.town,
+    user.sexe,
+    ''
+  ]
+  connection.query("INSERT INTO `things`.`accounts` ( `name`,`surname`,`username`, `email`, `birth`, `zipcode`, `town`, `sexe`, `profile_pic`) VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? );", values,  function(error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account exists
+    const token = generateAccessToken({ email: request.query.email });
+    response.json({id_token : token, user: results[0], message: "User connected"});
+    response.end();
+  });
+}
+
 
 function testLogin(req, res, next) {
     res.json({result : true})
