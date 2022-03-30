@@ -71,7 +71,7 @@ function login(request, response) {
 	// Ensure the input fields exists and are not empty
 	if (email && password) {
 		// Execute SQL query that'll select the account from the database based on the specified username and password
-		connection.query('SELECT username,email,birth,town,zipcode,profile_pic,sexe, name, surname FROM accounts JOIN passwords p ON accounts.user_id=p.password_id WHERE email= ?  AND p.password= ?', [email, password], function(error, results, fields) {
+		connection.query('SELECT username,email,birth,town,zipcode,profile_pic,sexe, name, surname FROM accounts JOIN passwords p ON accounts.user_id=p.owner WHERE email= ?  AND p.password= ?', [email, password], function(error, results, fields) {
 			// If there is an issue with the query, output the error
 			if (error) throw error;
 			// If the account exists
@@ -90,9 +90,11 @@ function login(request, response) {
 	}
 }
 
+
 function register(request, response) {
+
   const user = request.body.data;
-  const values = [
+  const userValues = [
     user.name,
     user.surname,
     user.username,
@@ -101,17 +103,26 @@ function register(request, response) {
     user.zipcode,
     user.town,
     user.sexe,
-    ''
+    '',
   ]
-  connection.query("INSERT INTO `things`.`accounts` ( `name`,`surname`,`username`, `email`, `birth`, `zipcode`, `town`, `sexe`, `profile_pic`) VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? );", values,  function(error, results, fields) {
+  let resultAdd;
+  connection.query("INSERT INTO `things`.`accounts` ( `name`,`surname`,`username`, `email`, `birth`, `zipcode`, `town`, `sexe`, `profile_pic`) VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? );", userValues,  function(error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
-    // If the account exists
-    const token = generateAccessToken({ email: request.query.email });
-    response.json({id_token : token, user: results[0], message: "User connected"});
-    response.end();
-  });
+    // If the account existsus
+    connection.query("INSERT INTO `things`.`passwords` ( `owner`, `password`) VALUES ( ? , ? );", [results.insertId, user.password],  function(error, passwordResults, fields) {
+      // If there is an issue with the query, output the error
+      if (error) throw error;
+      // If the account exists
+      const token = generateAccessToken({ email: request.query.email });
+      response.json({id_token : token, user: null, message: "User connected"});
+      response.end();
+    });
+  })
+
 }
+
+
 
 
 function testLogin(req, res, next) {
