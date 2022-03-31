@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER} = require("./routes");
+const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH} = require("./routes");
 
 const app = express();
 app.use(express.urlencoded({extended: false}));
@@ -20,10 +20,10 @@ app.use(function(req, res, next) {
   });
 
 // ROUTAGE EXPRESS
-app.get(ROUTE_HOME, home)
 app.use(ROUTE_LOGIN, login)
 app.use(ROUTE_REGISTER, register)
 app.get(ROUTE_TEST_LOGIN, authenticateToken, testLogin)
+app.get(ROUTE_SEARCH, search)
 
 // MYSQL 
 
@@ -56,12 +56,9 @@ function authenticateToken(req, res, next) {
   
       next()
     })
-  }
+}
 
 // FUNCTION EXPRESS
-function home(req, res) {
-    res.json({result : "home"})
-}
 
 function login(request, response) {
 
@@ -89,7 +86,6 @@ function login(request, response) {
 		response.end();
 	}
 }
-
 
 function register(request, response) {
 
@@ -122,11 +118,29 @@ function register(request, response) {
 
 }
 
-
-
-
 function testLogin(req, res, next) {
     res.json({result : true})
+}
+
+function search(req, res, next) {
+  //SELECT*FROM products JOIN accounts a ON products.`owner`=a.user_id WHERE title LIKE'%%' AND a.town LIKE'%Be%' AND price BETWEEN 0 AND 800 AND categories LIKE'%Multimedia%'
+
+  const filters = req.headers;
+  const userFilters = [
+      '%' + filters.title + '%',
+      '%' + filters.place + '%',
+      filters.pricemin ? parseInt(filters.pricemin) : 0,
+      filters.pricemax ? parseInt(filters.pricemax) : 10000,
+      '%' + filters.categorie + '%',
+  ]
+  let resultAdd;
+  connection.query("SELECT*FROM products JOIN accounts a ON products.`owner`=a.user_id WHERE title LIKE ? AND a.town LIKE ? AND price BETWEEN ? AND ? AND categories LIKE ?", userFilters,  function(error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results)
+  })
+
 }
 
 
