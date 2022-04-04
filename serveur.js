@@ -4,12 +4,14 @@ const path = require("path");
 const mysql = require('mysql');
 const cors = require('cors')
 const jwt = require('jsonwebtoken');
+const fileupload = require("express-fileupload");
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH} = require("./routes");
+const {ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_ADD_PRODUCT} = require("./routes");
 
 const app = express();
+app.use(fileupload());
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 app.use(cors())
@@ -24,6 +26,7 @@ app.use(ROUTE_LOGIN, login)
 app.use(ROUTE_REGISTER, register)
 app.get(ROUTE_TEST_LOGIN, authenticateToken, testLogin)
 app.get(ROUTE_SEARCH, search)
+app.use(ROUTE_ADD_PRODUCT,  addProduct)
 
 // MYSQL 
 
@@ -46,7 +49,7 @@ function generateAccessToken(email) {
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization']
     const token = authHeader;
-  
+
     if (token == null) return res.sendStatus(401)
   
     jwt.verify(token, process.env.JWT_SECRET_TOKEN, (err, user) => {  
@@ -126,6 +129,7 @@ function search(req, res, next) {
   //SELECT*FROM products JOIN accounts a ON products.`owner`=a.user_id WHERE title LIKE'%%' AND a.town LIKE'%Be%' AND price BETWEEN 0 AND 800 AND categories LIKE'%Multimedia%'
 
   const filters = req.headers;
+  console.log(filters)
   const userFilters = [
       '%' + filters.title + '%',
       '%' + filters.place + '%',
@@ -138,9 +142,15 @@ function search(req, res, next) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
+    console.log(results)
     res.json(results)
   })
 
+}
+
+function addProduct(req, res, next) {
+  console.log(req.files)
+  res.json({result : true})
 }
 
 
