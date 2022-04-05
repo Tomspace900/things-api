@@ -5,6 +5,7 @@ const
     ROUTE_TEST_LOGIN = '/test-login',
     ROUTE_SEARCH = '/search',
     ROUTE_ADD_PRODUCT = '/add-product'
+    ROUTE_PHOTOS = '/photos'
 ;
 
 module.exports = {
@@ -13,5 +14,6 @@ module.exports = {
     ROUTE_TEST_LOGIN,
     ROUTE_REGISTER,
     ROUTE_SEARCH,
-    ROUTE_ADD_PRODUCT
+    ROUTE_ADD_PRODUCT,
+    ROUTE_PHOTOS
 }
