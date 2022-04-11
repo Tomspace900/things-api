@@ -9,7 +9,7 @@ const fs = require('fs')
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const { ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_ADD_PRODUCT, ROUTE_PHOTOS } = require("./routes");
+const { ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_PRODUCT_BY_ID, ROUTE_ADD_PRODUCT, ROUTE_PHOTOS, ROUTE_ADD_LIKE, ROUTE_CHECK_LIKE, ROUTE_HAVE_LIKED_PRODUCTS } = require("./routes");
 const { read } = require('fs');
 
 const app = express();
@@ -28,8 +28,12 @@ app.use(ROUTE_LOGIN, login)
 app.use(ROUTE_REGISTER, register)
 app.get(ROUTE_TEST_LOGIN, authenticateToken, testLogin)
 app.get(ROUTE_SEARCH, search)
+app.use(ROUTE_HAVE_LIKED_PRODUCTS, likedProducts)
 app.use(ROUTE_ADD_PRODUCT, addProduct)
+app.use(ROUTE_ADD_LIKE, addLike)
+app.use(ROUTE_CHECK_LIKE, checkLike)
 app.get(ROUTE_PHOTOS, photos)
+app.get(ROUTE_PRODUCT_BY_ID, product_by_id)
 
 // MYSQL 
 
@@ -151,6 +155,18 @@ function search(req, res, next) {
 
 }
 
+function likedProducts(req,res,next){
+  console.log(req.body.data)
+  connection.query("SELECT * FROM likes JOIN products p ON likes.product = p.product_id JOIN accounts a ON p.`owner`=a.user_id WHERE likes.`owner` LIKE ?", [req.body.data.owner_id], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    //console.log(results)
+    res.json(results)
+    res.end();
+  })
+}
+
 function addProduct(req, res, next) {
   console.dir(req.files.photos)
   console.log(req.body)
@@ -176,7 +192,7 @@ function addProduct(req, res, next) {
         url_pics.push(`https://api.things.victorbillaud.fr/photos?id=${req.body.owner}&name=${photo.name}`);
       }
 
-      
+
       const userValues = [
         req.body.title,
         req.body.description,
@@ -188,17 +204,17 @@ function addProduct(req, res, next) {
         parseInt(req.body.price),
         req.body.categorie,
       ]
-    
+
       // query insert into
-    
-      connection.query("INSERT INTO `things`.`products` ( `title`,`description`,`date`, `product_pic_1`, `product_pic_2`, `product_pic_3`, `owner` , `price`, `categories`) VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? );", userValues,  function(error, results, fields) {
+
+      connection.query("INSERT INTO `things`.`products` ( `title`,`description`,`date`, `product_pic_1`, `product_pic_2`, `product_pic_3`, `owner` , `price`, `categories`) VALUES (? , ? , ? , ? , ? , ? , ? , ? , ? );", userValues, function (error, results, fields) {
         // If there is an issue with the query, output the error
         if (error) throw error;
         // If the account existsus
-        res.json({message: 'Product has been uploaded'});
+        res.json({ message: 'Product has been uploaded' });
         res.end();
       })
-      
+
     }
   } catch (err) {
     console.error(err)
@@ -207,8 +223,48 @@ function addProduct(req, res, next) {
 
 }
 
+function addLike(req, res, next){
+  console.log(req.body.data.element);
+
+  connection.query("INSERT INTO `things`.`likes` ( `owner`,`product` ) VALUES (? , ?);", [req.body.data.owner_id , req.body.data.product_id ], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.send(true);
+    res.end();
+  })
+
+}
+
+function checkLike(req, res, next){
+
+  connection.query("SELECT * FROM likes WHERE `owner` LIKE  ?  AND `product` LIKE ?", [req.body.data.owner_id , req.body.data.product_id ], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    console.log(results)
+    results[0] ? res.send(true) : res.send(false);
+    res.end();
+  })
+
+}
+
 function photos(req, res, next) {
   res.sendFile(__dirname + `/uploads/${req.query.id}/${req.query.name}`)
+}
+
+function product_by_id(req, res, next) {
+  const userFilters = [
+    req.query.id
+  ]
+
+  connection.query("SELECT * FROM products JOIN accounts a ON products.`owner`=a.user_id WHERE product_id = ? ", userFilters, function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    console.log(results)
+    res.json(results[0])
+  })
 }
 
 
