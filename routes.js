@@ -12,7 +12,10 @@ const
     ROUTE_ADD_LIKE = '/add-like',
     ROUTE_UN_LIKE = '/un-like',
     ROUTE_CHECK_LIKE = '/check-like',
-    ROUTE_PHOTOS = '/photos'
+    ROUTE_PHOTOS = '/photos',
+    ROUTE_MESSAGE = '/message',
+    ROUTE_ADD_MESSAGE = '/add-message'
+    ROUTE_USER_BY_ID = '/user-by-id'
     ;
 
 module.exports = {
@@ -29,5 +32,8 @@ module.exports = {
     ROUTE_ADD_LIKE,
     ROUTE_CHECK_LIKE,
     ROUTE_PHOTOS,
-    ROUTE_UN_LIKE
+    ROUTE_UN_LIKE,
+    ROUTE_MESSAGE,
+    ROUTE_ADD_MESSAGE,
+    ROUTE_USER_BY_ID
 }

@@ -9,7 +9,24 @@ const fs = require('fs')
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const { ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN,ROUTE_DELETE_PRODUCT, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_PRODUCT_BY_ID, ROUTE_ADD_PRODUCT, ROUTE_PHOTOS, ROUTE_ADD_LIKE,ROUTE_UN_LIKE, ROUTE_CHECK_LIKE, ROUTE_HAVE_LIKED_PRODUCTS, ROUTE_PRODUCTS_BY_SELLER } = require("./routes");
+const { ROUTE_HOME,
+  ROUTE_TEST_LOGIN,
+  ROUTE_LOGIN,
+  ROUTE_DELETE_PRODUCT,
+  ROUTE_REGISTER,
+  ROUTE_SEARCH,
+  ROUTE_PRODUCT_BY_ID,
+  ROUTE_ADD_PRODUCT,
+  ROUTE_PHOTOS,
+  ROUTE_ADD_LIKE,
+  ROUTE_UN_LIKE,
+  ROUTE_CHECK_LIKE,
+  ROUTE_HAVE_LIKED_PRODUCTS,
+  ROUTE_PRODUCTS_BY_SELLER,
+  ROUTE_MESSAGE,
+  ROUTE_ADD_MESSAGE,
+  ROUTE_USER_BY_ID
+} = require("./routes");
 const { read } = require('fs');
 
 const app = express();
@@ -37,6 +54,9 @@ app.get(ROUTE_PHOTOS, photos)
 app.get(ROUTE_PRODUCT_BY_ID, product_by_id)
 app.use(ROUTE_PRODUCTS_BY_SELLER, products_by_seller)
 app.use(ROUTE_DELETE_PRODUCT, delete_product)
+app.use(ROUTE_MESSAGE, message)
+app.use(ROUTE_ADD_MESSAGE, addMessage)
+app.use(ROUTE_USER_BY_ID, userById)
 
 // MYSQL 
 
@@ -103,8 +123,7 @@ function login(request, response) {
 function register(request, response) {
 
   console.log(request.body.data)
-  response.end();
-  /*
+
   const user = request.body.data;
   const userValues = [
     user.name,
@@ -130,9 +149,9 @@ function register(request, response) {
       response.json({ id_token: token, user: null, message: "User connected" });
       response.end();
     });
-    
+
   })
-  */
+
 }
 
 function testLogin(req, res, next) {
@@ -162,7 +181,7 @@ function search(req, res, next) {
 
 }
 
-function likedProducts(req,res,next){
+function likedProducts(req, res, next) {
   console.log(req.body.data)
   connection.query("SELECT * FROM likes JOIN products p ON likes.product = p.product_id JOIN accounts a ON p.`owner`=a.user_id WHERE likes.`owner` LIKE ?", [req.body.data.owner_id], function (error, results, fields) {
     // If there is an issue with the query, output the error
@@ -188,20 +207,20 @@ function addProduct(req, res, next) {
       let url_pics = [];
 
       //loop all files
-      if (req.files.photos.length){
+      if (req.files.photos.length) {
         for (let i = 0; i < req.files.photos.length; i++) {
           let photo = req.files.photos[i];
-  
+
           //move photo to uploads directory
           fs.mkdirSync(`./uploads/${req.body.owner}`, { recursive: true })
           photo.mv(`./uploads/${req.body.owner}/` + photo.name);
-  
+
           //push file details
           url_pics.push(`https://api.things.victorbillaud.fr/photos?id=${req.body.owner}&name=${photo.name}`);
         }
-      }else{
+      } else {
         let photo = req.files.photos;
-  
+
         //move photo to uploads directory
         fs.mkdirSync(`./uploads/${req.body.owner}`, { recursive: true })
         photo.mv(`./uploads/${req.body.owner}/` + photo.name);
@@ -209,7 +228,7 @@ function addProduct(req, res, next) {
         //push file details
         url_pics.push(`https://api.things.victorbillaud.fr/photos?id=${req.body.owner}&name=${photo.name}`);
       }
-      
+
 
 
       const userValues = [
@@ -242,10 +261,10 @@ function addProduct(req, res, next) {
 
 }
 
-function addLike(req, res, next){
+function addLike(req, res, next) {
   console.log(req.body.data);
 
-  connection.query("INSERT IGNORE INTO `things`.`likes` ( `owner`,`product` ) VALUES (? , ?);", [req.body.data.owner_id , req.body.data.product_id], function (error, results, fields) {
+  connection.query("INSERT IGNORE INTO `things`.`likes` ( `owner`,`product` ) VALUES (? , ?);", [req.body.data.owner_id, req.body.data.product_id], function (error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
@@ -255,10 +274,10 @@ function addLike(req, res, next){
 
 }
 
-function unLike(req, res, next){
+function unLike(req, res, next) {
   console.log(req.body.data);
 
-  connection.query("DELETE FROM `things`.`likes`  WHERE `owner` LIKE ? AND `product` LIKE ? ;", [req.body.data.owner_id , req.body.data.product_id], function (error, results, fields) {
+  connection.query("DELETE FROM `things`.`likes`  WHERE `owner` LIKE ? AND `product` LIKE ? ;", [req.body.data.owner_id, req.body.data.product_id], function (error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
@@ -267,13 +286,13 @@ function unLike(req, res, next){
   })
 }
 
-function checkLike(req, res, next){
+function checkLike(req, res, next) {
 
-  connection.query("SELECT * FROM likes WHERE `owner` LIKE  ?  AND `product` LIKE ?", [req.body.data.owner_id , req.body.data.product_id ], function (error, results, fields) {
+  connection.query("SELECT * FROM likes WHERE `owner` LIKE  ?  AND `product` LIKE ?", [req.body.data.owner_id, req.body.data.product_id], function (error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
-    console.log("check like" , results)
+    console.log("check like", results)
     results[0] ? res.send(true) : res.send(false);
     res.end();
   })
@@ -314,6 +333,33 @@ function delete_product(req, res, next) {
     if (error) throw error;
     // If the account existsus
     res.json(results)
+  })
+}
+
+function message(req, res, next) {
+  connection.query("SELECT * FROM message WHERE sender LIKE ? OR receiver LIKE ? ", [req.body.data.id, req.body.data.id], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results)
+  })
+}
+
+function addMessage(req, res, next) {
+  connection.query("INSERT INTO things.message (text, date, sender, receiver) VALUES ( ? , ?, ? , ? )", [req.body.data.text, req.body.data.date, req.body.data.sender, req.body.data.receiver], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results)
+  })
+}
+
+function userById(req, res, next) {
+  connection.query("SELECT user_id, profile_pic, username FROM accounts WHERE user_id LIKE ?;", req.body.data.id, function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results[0])
   })
 }
 
