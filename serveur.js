@@ -9,7 +9,7 @@ const fs = require('fs')
 require('dotenv').config();
 
 // CONFIG EXPRESS
-const { ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_PRODUCT_BY_ID, ROUTE_ADD_PRODUCT, ROUTE_PHOTOS, ROUTE_ADD_LIKE, ROUTE_CHECK_LIKE, ROUTE_HAVE_LIKED_PRODUCTS } = require("./routes");
+const { ROUTE_HOME, ROUTE_TEST_LOGIN, ROUTE_LOGIN,ROUTE_DELETE_PRODUCT, ROUTE_REGISTER, ROUTE_SEARCH, ROUTE_PRODUCT_BY_ID, ROUTE_ADD_PRODUCT, ROUTE_PHOTOS, ROUTE_ADD_LIKE,ROUTE_UN_LIKE, ROUTE_CHECK_LIKE, ROUTE_HAVE_LIKED_PRODUCTS, ROUTE_PRODUCTS_BY_SELLER } = require("./routes");
 const { read } = require('fs');
 
 const app = express();
@@ -31,9 +31,12 @@ app.get(ROUTE_SEARCH, search)
 app.use(ROUTE_HAVE_LIKED_PRODUCTS, likedProducts)
 app.use(ROUTE_ADD_PRODUCT, addProduct)
 app.use(ROUTE_ADD_LIKE, addLike)
+app.use(ROUTE_UN_LIKE, unLike)
 app.use(ROUTE_CHECK_LIKE, checkLike)
 app.get(ROUTE_PHOTOS, photos)
 app.get(ROUTE_PRODUCT_BY_ID, product_by_id)
+app.use(ROUTE_PRODUCTS_BY_SELLER, products_by_seller)
+app.use(ROUTE_DELETE_PRODUCT, delete_product)
 
 // MYSQL 
 
@@ -99,6 +102,9 @@ function login(request, response) {
 
 function register(request, response) {
 
+  console.log(request.body.data)
+  response.end();
+  /*
   const user = request.body.data;
   const userValues = [
     user.name,
@@ -124,8 +130,9 @@ function register(request, response) {
       response.json({ id_token: token, user: null, message: "User connected" });
       response.end();
     });
+    
   })
-
+  */
 }
 
 function testLogin(req, res, next) {
@@ -168,7 +175,7 @@ function likedProducts(req,res,next){
 }
 
 function addProduct(req, res, next) {
-  console.dir(req.files.photos)
+  console.dir(req.files.photos.length)
   console.log(req.body)
 
   try {
@@ -181,9 +188,20 @@ function addProduct(req, res, next) {
       let url_pics = [];
 
       //loop all files
-      for (let i = 0; i < req.files.photos.length; i++) {
-        let photo = req.files.photos[i];
-
+      if (req.files.photos.length){
+        for (let i = 0; i < req.files.photos.length; i++) {
+          let photo = req.files.photos[i];
+  
+          //move photo to uploads directory
+          fs.mkdirSync(`./uploads/${req.body.owner}`, { recursive: true })
+          photo.mv(`./uploads/${req.body.owner}/` + photo.name);
+  
+          //push file details
+          url_pics.push(`https://api.things.victorbillaud.fr/photos?id=${req.body.owner}&name=${photo.name}`);
+        }
+      }else{
+        let photo = req.files.photos;
+  
         //move photo to uploads directory
         fs.mkdirSync(`./uploads/${req.body.owner}`, { recursive: true })
         photo.mv(`./uploads/${req.body.owner}/` + photo.name);
@@ -191,6 +209,7 @@ function addProduct(req, res, next) {
         //push file details
         url_pics.push(`https://api.things.victorbillaud.fr/photos?id=${req.body.owner}&name=${photo.name}`);
       }
+      
 
 
       const userValues = [
@@ -224,9 +243,9 @@ function addProduct(req, res, next) {
 }
 
 function addLike(req, res, next){
-  console.log(req.body.data.element);
+  console.log(req.body.data);
 
-  connection.query("INSERT INTO `things`.`likes` ( `owner`,`product` ) VALUES (? , ?);", [req.body.data.owner_id , req.body.data.product_id ], function (error, results, fields) {
+  connection.query("INSERT IGNORE INTO `things`.`likes` ( `owner`,`product` ) VALUES (? , ?);", [req.body.data.owner_id , req.body.data.product_id], function (error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
@@ -236,13 +255,25 @@ function addLike(req, res, next){
 
 }
 
+function unLike(req, res, next){
+  console.log(req.body.data);
+
+  connection.query("DELETE FROM `things`.`likes`  WHERE `owner` LIKE ? AND `product` LIKE ? ;", [req.body.data.owner_id , req.body.data.product_id], function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.send(true);
+    res.end();
+  })
+}
+
 function checkLike(req, res, next){
 
   connection.query("SELECT * FROM likes WHERE `owner` LIKE  ?  AND `product` LIKE ?", [req.body.data.owner_id , req.body.data.product_id ], function (error, results, fields) {
     // If there is an issue with the query, output the error
     if (error) throw error;
     // If the account existsus
-    console.log(results)
+    console.log("check like" , results)
     results[0] ? res.send(true) : res.send(false);
     res.end();
   })
@@ -266,6 +297,26 @@ function product_by_id(req, res, next) {
     res.json(results[0])
   })
 }
+
+function products_by_seller(req, res, next) {
+  connection.query("SELECT * FROM products WHERE owner = ? ", req.body.data.owner_id, function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results)
+  })
+}
+
+function delete_product(req, res, next) {
+  console.log(req.body.data.id)
+  connection.query("DELETE FROM products WHERE product_id = ? ;", req.body.data.id, function (error, results, fields) {
+    // If there is an issue with the query, output the error
+    if (error) throw error;
+    // If the account existsus
+    res.json(results)
+  })
+}
+
 
 
 app.listen(process.env.PORT, () => {
